@@ -21,3 +21,7 @@ variable "web_server_address_prefix"{
 variable "web_server_name" {
     type = string
 }
+
+variable "web_count" {
+    type = number
+}

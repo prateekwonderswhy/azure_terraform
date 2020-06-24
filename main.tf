@@ -23,21 +23,23 @@ resource "azurerm_subnet" "web_server_subnet" {
 }
 
 resource "azurerm_network_interface" "web_server_nic" {
-    name = "${var.resource_prefix}-nic"
+    name = "${var.resource_prefix}-${format("%02d",count.index)}-nic"
     resource_group_name = azurerm_resource_group.web_server_rg.name
     location = var.web_server_location
+    count = var.web_count
 
     ip_configuration {
       name = "${var.web_server_name}-ip"
       subnet_id = azurerm_subnet.web_server_subnet.id
       private_ip_address_allocation = "dynamic"
-      public_ip_address_id = azurerm_public_ip.web_server_public_ip.id
+      public_ip_address_id = azurerm_public_ip.web_server_public_ip[count.index].id
     }
 }
 
 resource "azurerm_public_ip" "web_server_public_ip" {
-    name = "${var.resource_prefix}-public-ip"   
+    name = "${var.resource_prefix}-${format("%02d",count.index)}-public-ip"   
     location = var.web_server_location
+    count = var.web_count
     resource_group_name = azurerm_resource_group.web_server_rg.name
     allocation_method = "Dynamic"
 }
@@ -62,16 +64,17 @@ resource "azurerm_network_security_rule" "web_server_nsg_rule_ssh" {
   network_security_group_name = azurerm_network_security_group.web_server_nsg.name
 }
 
-resource "azurerm_network_interface_security_group_association" "web_server_nsg_association" {
+resource "azurerm_subnet_network_security_group_association" "web_server_subnet_nsg_association" {
     network_security_group_id= azurerm_network_security_group.web_server_nsg.id
-    network_interface_id = azurerm_network_interface.web_server_nic.id 
+    subnet_id = azurerm_subnet.web_server_subnet.id
 }
 
-resource "azurerm_linux_virtual_machine" "ansible_controller" {
-  name = "${var.web_server_name}-controller"
+resource "azurerm_linux_virtual_machine" "ansible_node" {
+  name = "${var.web_server_name}-${format("%02d",count.index)}"
   location = var.web_server_location
+  count = var.web_count
   resource_group_name = azurerm_resource_group.web_server_rg.name 
-  network_interface_ids = [azurerm_network_interface.web_server_nic.id]
+  network_interface_ids = [azurerm_network_interface.web_server_nic[count.index].id]
   size = "Standard_B1s"
   admin_username = "ansible-controller"
   admin_password = "iamStan4life"
