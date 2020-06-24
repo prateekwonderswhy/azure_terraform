@@ -76,7 +76,7 @@ resource "azurerm_linux_virtual_machine" "ansible_node" {
   resource_group_name = azurerm_resource_group.web_server_rg.name 
   network_interface_ids = [azurerm_network_interface.web_server_nic[count.index].id]
   size = "Standard_B1s"
-  admin_username = "ansible-controller"
+  admin_username = "ansible-node-${format("%02d", count.index)}"
   admin_password = "iamStan4life"
   computer_name = "ubuntuVM"
   disable_password_authentication = false
