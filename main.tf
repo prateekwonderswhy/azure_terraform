@@ -79,7 +79,12 @@ resource "azurerm_linux_virtual_machine" "ansible_node" {
   admin_username = "ansible-node-${format("%02d", count.index)}"
   admin_password = "iamStan4life"
   computer_name = "ubuntuVM"
-  disable_password_authentication = false
+  disable_password_authentication = true
+
+  admin_ssh_key {
+    username   = "ansible-node-${format("%02d", count.index)}"
+    public_key = file("~/.ssh/id_rsa.pub")
+  }
 
   os_disk {
         caching           = "ReadWrite"
@@ -93,4 +98,8 @@ resource "azurerm_linux_virtual_machine" "ansible_node" {
         version   = "latest"
     }
 }
+
+
+
+
 
