@@ -83,7 +83,7 @@ resource "azurerm_linux_virtual_machine" "ansible_node" {
 
   admin_ssh_key {
     username   = "ansible-node-${format("%02d", count.index)}"
-    public_key = file("~/.ssh/id_rsa.pub")
+    public_key = data.azurerm_key_vault_secret.ssh_pub_key.value
   }
 
   os_disk {
