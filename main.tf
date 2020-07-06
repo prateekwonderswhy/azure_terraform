@@ -23,23 +23,22 @@ resource "azurerm_subnet" "web_server_subnet" {
 }
 
 resource "azurerm_network_interface" "web_server_nic" {
-    name = "${var.resource_prefix}-${format("%02d",count.index)}-nic"
+    name = "${var.resource_prefix}-nic"
     resource_group_name = azurerm_resource_group.web_server_rg.name
     location = var.web_server_location
-    count = var.web_count
+    
 
     ip_configuration {
       name = "${var.web_server_name}-ip"
       subnet_id = azurerm_subnet.web_server_subnet.id
       private_ip_address_allocation = "dynamic"
-      public_ip_address_id = azurerm_public_ip.web_server_public_ip[count.index].id
+      public_ip_address_id = azurerm_public_ip.web_server_public_ip.id
     }
 }
 
 resource "azurerm_public_ip" "web_server_public_ip" {
-    name = "${var.resource_prefix}-${format("%02d",count.index)}-public-ip"   
+    name = "${var.resource_prefix}-public-ip"   
     location = var.web_server_location
-    count = var.web_count
     resource_group_name = azurerm_resource_group.web_server_rg.name
     allocation_method = "Dynamic"
 }
@@ -70,36 +69,53 @@ resource "azurerm_subnet_network_security_group_association" "web_server_subnet_
 }
 
 resource "azurerm_linux_virtual_machine" "ansible_node" {
-  name = "${var.web_server_name}-${format("%02d",count.index)}"
+  name = "${var.web_server_name}"
   location = var.web_server_location
-  count = var.web_count
   resource_group_name = azurerm_resource_group.web_server_rg.name 
-  network_interface_ids = [azurerm_network_interface.web_server_nic[count.index].id]
+  network_interface_ids = [azurerm_network_interface.web_server_nic.id]
   size = "Standard_B1s"
-  admin_username = "ansible-node-${format("%02d", count.index)}"
+  admin_username = "ansible-node"
   admin_password = "iamStan4life"
   computer_name = "ubuntuVM"
   disable_password_authentication = true
 
   admin_ssh_key {
-    username   = "ansible-node-${format("%02d", count.index)}"
-    public_key = data.azurerm_key_vault_secret.ssh_pub_key.value
+    username   = "ansible-node"
+    public_key = data.azurerm_key_vault_secret.azure_public_key.value
   }
 
   os_disk {
         caching           = "ReadWrite"
         storage_account_type = "Standard_LRS"
     }
-
+  
+  
   source_image_reference {
         publisher = "Canonical"
         offer     = "UbuntuServer"
         sku       = "18.04-LTS"
         version   = "latest"
     }
+
 }
 
 
+resource "null_resource" "ansible" {
+  depends_on = ["azurerm_linux_virtual_machine.ansible_node"]
+  
+  
+  provisioner "ansible" {
+    plays {
+      playbook  {
+        file_path  = "./playbook-pingtest.yml"
+      }
+      
+      hosts = [
+        "azurerm_linux_virtual_machine.ansible_node.public_ip_address",
+      ]
+    }
 
-
-
+    
+    
+  }
+}

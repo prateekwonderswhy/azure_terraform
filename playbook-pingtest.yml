@@ -1,0 +1,8 @@
+-
+    name: Check connectivity to target servers
+    become_user: root
+    become: true
+    hosts: azurerm_linux_virtual_machine.ansible_node.public_ip_address
+    tasks:
+        - name: Ping all Servers
+          ping:
